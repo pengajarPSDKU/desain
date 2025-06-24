@@ -1,0 +1,21 @@
+.bg-body1{
+    background: #2A7B9B;
+    background: linear-gradient(90deg,rgba(42, 123, 155, 1) 0%, rgba(90, 204, 198, 1) 38%, rgba(31, 111, 125, 1) 79%); 
+}
+
+.bg-header {
+    background-image: url(galeri41.jpg);
+    background-size: cover; /* Gambar menutupi seluruh area header */
+    background-position: center; /* Gambar di tengah */
+    background-repeat: no-repeat; /* Tidak ada pengulangan gambar */
+    min-height: 100px;
+}
+
+.bg-gambar {
+    background-image: url(background.png);
+}
+
+.bg-navigasi {
+    background-color: aqua;
+}
+

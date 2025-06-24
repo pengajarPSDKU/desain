@@ -1,0 +1,146 @@
+<body class="bg-body1"></body>
+<main class="container my-3">
+    <div class="container text-center">
+        <h2 class="text-center mb-3">Menampilkan file PDF</h2>
+            <div class="nav-button text-center">
+                <button id="prev" class="btn btn-outline-primary">Sebelumnya</button>
+                <span>Halaman <span id="page-num">1</span> dari <span id="page-count">?</span></span>
+                <button id="next" class="btn btn-outline-primary">Sesudahnya</button>
+
+                <input type="number" id="page-input" class="form-control d-inline-block w-auto mx-2" min="1" value="1" aria-label="Nomor Halaman" style="width: 80px;">
+                <button id="go-to-page" class="btn btn-outline-secondary">Cari</button>
+                <a href="file/06_Warna.pdf" onclick="window.print()"
+                class="btn btn-outline-success ms-2"> Cetak</a>
+
+                <a href="file/06_Warna.pdf" download class="btn btn-outline-success ms-2"> Unduh</a>
+            </div>
+    </div>
+    <div class="container text-center mt-3">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js">
+</script>
+
+<script>
+    const url='file/06_Warna.pdf';
+
+    let pdfDoc=null,
+        pageNum=1,
+        pageRendering=false,
+        pageNumPending=null,
+        scale=1,
+        canvas=document.getElementById('pdf-canvas');
+        ctx =canvas.getContext('2d');
+
+    const canvasContainer = document.querySelector('.container.text-center.mt-3');
+    const pageInput = document.getElementById('page-input');
+    const goToPageBtn = document.getElementById('go-to-page');
+
+
+    function calculateScale(viewport) {
+        const containerWidth = canvasContainer.clientWidth; 
+        const desiredWidth = containerWidth; 
+        const scale = desiredWidth / viewport.width;
+        return scale;
+    }
+
+    function renderPage(num){
+        pageRendering = true;
+        pdfDoc.getPage(num).then(function(page) {
+            const unscaledViewport = page.getViewport({ scale: 1 });
+            
+            const scale = calculateScale(unscaledViewport);
+
+            const viewport = page.getViewport({ scale: scale });
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            canvas.style.width = '100%'; 
+            canvas.style.height = 'auto'; 
+
+            const renderContext = {
+                canvasContext: ctx,
+                viewport: viewport
+            };
+
+            const renderTask = page.render(renderContext);
+
+            renderTask.promise.then(function(){
+                pageRendering = false;
+                if(pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
+        });
+
+        document.getElementById('page-num').textContent = num;
+        pageInput.value = num; 
+    }
+
+    function queueRenderPage(num) {
+        if(pageRendering){
+            pageNumPending = num;
+        }
+        else {
+            renderPage(num);
+        }
+    }
+
+    function onePrevPage() {
+        if(pageNum <= 1) return;
+        pageNum--;
+        queueRenderPage(pageNum)
+    }
+
+    function onNextPage(){
+        if(pageNum >= pdfDoc.numPages)return;
+        pageNum++;
+        queueRenderPage(pageNum)
+    }
+
+    function goToPage() {
+        const inputVal = parseInt(pageInput.value); 
+
+        // Validasi input
+        if (isNaN(inputVal) || inputVal < 1 || inputVal > pdfDoc.numPages) {
+            alert(`Masukkan nomor halaman yang valid antara 1 dan ${pdfDoc.numPages}.`);
+            pageInput.value = pageNum; 
+            return;
+        }
+
+        if (inputVal === pageNum) {
+            return; 
+        }
+
+        pageNum = inputVal;
+        queueRenderPage(pageNum);
+    }
+
+    document.getElementById('prev').addEventListener('click',onePrevPage);
+    document.getElementById('next').addEventListener('click',onNextPage);
+    goToPageBtn.addEventListener('click', goToPage);
+    pageInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            goToPage();
+        }
+    });
+
+
+    pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+        pdfDoc=pdfDoc_;
+        document.getElementById('page-count').textContent=pdfDoc.numPages;
+        pageInput.setAttribute('max', pdfDoc.numPages);
+        pageInput.value = pageNum; 
+        renderPage(pageNum);
+    });
+
+    window.addEventListener('resize', function() {
+        if (pdfDoc) { 
+            queueRenderPage(pageNum);
+        }
+    });
+</script>
